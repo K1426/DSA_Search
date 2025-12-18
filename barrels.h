@@ -13,6 +13,7 @@ struct Word
     {
         this->data = data;
     }
+    //insert a document
     void insert_doc(int docID, float rank)
     {
         ranks.push_back({docID, rank});
@@ -23,10 +24,7 @@ struct Word
     {
         for (auto& hits : ranks)
         {
-            f << data;
-            if (hits.size() <= 1) {std::cout << "error " << data; return;}
-            for (int pos : hits) f << " " << pos;
-            f << "\n";
+            f << data << hits.first << hits.second << "\n";
         }
     }
     */
@@ -112,11 +110,14 @@ class HashTable
         return bucket[key % size].add(key);
     }
 
+    //search through id
+    //and get a pointer
     Word* get_word(int key)
     {
         return bucket[key % size].contains(key);
     }
     
+    //get the size
     int getcount() {return count;}
 
     /*

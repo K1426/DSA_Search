@@ -7,6 +7,7 @@ HashTable* barrel_inverted_index;
 //create inverted index from forward index
 void build_inverted_index(std::string& forward, std::string& inverted)
 {
+    //open inverted and forward index files
     int wordID = 0, docID = 0, rank = 0, size = 0;
     std::ifstream fwdfile(forward);
     std::ofstream invfile(inverted);
@@ -20,6 +21,8 @@ void build_inverted_index(std::string& forward, std::string& inverted)
         std::cerr << "Error: Cannot open " << inverted << "\n";
         return;
     }
+
+    //copy forward index in reverse to inverted index
     while (!fwdfile.eof())
     {
         //in forward index, first is docID, second is wordID, next are rank and size
@@ -35,6 +38,7 @@ void build_inverted_index(std::string& forward, std::string& inverted)
 
 void load_barrels(std::string& inverted)
 {
+    //build barrels
     barrel_inverted_index = new HashTable(1000);
     int wordID, docID, rank, size;
     std::ifstream invfile(inverted);
@@ -46,13 +50,17 @@ void load_barrels(std::string& inverted)
         return;
     }
     
+    //get all the information
     while (!invfile.eof())
     {
         invfile >> wordID >> docID >> rank >> size;
 
+        //store it in barrels
         w = barrel_inverted_index->get_word(wordID);
         if (w == nullptr) w = barrel_inverted_index->insert(wordID);
 
+        //the ranking here gets lower (increases) as position increases
+        //and gets higher (decreases) as frequency increases
         w->insert_doc(docID, (float)rank / (float)(size*size));
     }
     invfile.close();

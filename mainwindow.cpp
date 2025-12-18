@@ -18,8 +18,10 @@ MainWindow::MainWindow(QWidget *parent)
         std::cerr << "Error: Input directory does not exist: " << input_dir << "\n";
     }
 
+    //process new files
     int processed = make_things(input_dir);
 
+    //display results
     if (processed > 0)
     {
         std::cout << "\nCompleted Successfully!\n";
@@ -32,6 +34,7 @@ MainWindow::MainWindow(QWidget *parent)
         build_inverted_index(forward, inverted);
     }
 
+    //load the barrels
     load_barrels(inverted);
     std::cout << "Loaded barrels\n";
     ui->setupUi(this);
@@ -45,9 +48,10 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+
+//autocompletion
 void MainWindow::on_lineEdit_textChanged(const QString &arg1)
 {
-    //autocompletion
     ui->resultsBrowser->setText("");
     if (arg1 != "")
     {
@@ -58,9 +62,9 @@ void MainWindow::on_lineEdit_textChanged(const QString &arg1)
 }
 
 
+//search
 void MainWindow::on_buttonSearch_clicked()
 {
-    //search
     ui->resultsBrowser->setText("");
     std::string query = ui->lineEdit->text().toStdString();
     std::vector<std::pair<int, float>> results = multi_search(query);
@@ -71,6 +75,7 @@ void MainWindow::on_buttonSearch_clicked()
 }
 
 
+//enter path and add file
 void MainWindow::on_buttonPath_clicked()
 {
     std::string path = ui->editPath->text().toStdString();
@@ -97,6 +102,8 @@ void MainWindow::on_buttonPath_clicked()
 }
 
 
+//click on a result
+//then content shown
 void MainWindow::on_resultsBrowser_anchorClicked(const QUrl &arg1)
 {
     ui->stackedWidget->setCurrentIndex(1);
@@ -107,24 +114,30 @@ void MainWindow::on_resultsBrowser_anchorClicked(const QUrl &arg1)
 }
 
 
+//move to document addition
 void MainWindow::on_buttonGoAdd_clicked()
 {
     ui->stackedWidget->setCurrentIndex(2);
+    ui->labelSuccess->setText("");
 }
 
 
+//move to searching
 void MainWindow::on_buttonGoSearch_clicked()
 {
     ui->stackedWidget->setCurrentIndex(0);
 }
 
 
+//move to searching
 void MainWindow::on_buttonGoBack_clicked()
 {
     ui->stackedWidget->setCurrentIndex(0);
 }
 
 
+
+//exit buttons
 void MainWindow::on_buttonCloseAdd_clicked()
 {
     QApplication::quit();

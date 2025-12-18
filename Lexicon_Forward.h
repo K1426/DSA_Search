@@ -38,17 +38,24 @@ void load_lexicon()
 //new file paths for regular files in directory
 int list_files(std::string& dirPath, std::vector<std::string>& files)
 {
+    //files already parsed
     std::unordered_set<std::string> parsed_files;
     int docID = 0;
     std::string info = "";
+
+    //check how many have been parsed
     std::ifstream get_docs(parsedfile);
     if (get_docs.is_open())
     {
         while (!get_docs.eof())
         {
+            //get the path and add it to path vector
+            //and also path set
             get_docs >> docID >> info;
             paths.push_back(info);
             parsed_files.insert(info);
+
+            //get the title and add it to title vector
             getline(get_docs, info);
             titles.push_back(info);
         }
@@ -57,6 +64,7 @@ int list_files(std::string& dirPath, std::vector<std::string>& files)
     
     try
     {
+        //check for new files
         for (const auto& file : fsys::directory_iterator(dirPath))
         {
             info = file.path().string();
@@ -67,22 +75,25 @@ int list_files(std::string& dirPath, std::vector<std::string>& files)
     catch (fsys::filesystem_error& e)
     {
         std::cerr << "Filesystem error while listing files: " << e.what() << "\n";
-        exit(0);
+        return -1;
     }
 
     return docID;
 }
 
-//fetch content from txt
+//fetch content from txt file
 std::string parse_txt(std::string& path)
 {
     std::string content = "", temp = "";
+
     std::ifstream infile(path);
     if (!infile.is_open())
     {
         std::cerr << path << " not open\n";
         return "";
     }
+    //read every line of text
+    //add it to output string
     while(getline(infile, temp)) content += temp + "\n";
     infile.close();
     return content;
@@ -161,18 +172,21 @@ void parse_content(std::string& content, std::ofstream& lexfile, std::unordered_
     std::istringstream ss(content);
     std::string word;
     int wordID = 0, pos = 0;
+    //for every word
     while (ss >> word)
     {
         clean_token(word);
         if (word != "")
         {
+            //add it to lexicon
+            //and update rank of doc
+            //with respect to the word
             ++pos;
             wordID = enter_in_lexicon(word, lexfile);
             ranks[wordID].first+=pos;
             ranks[wordID].second++;
         }
-    }
-    
+    } 
 }
 
 //clean word
@@ -198,13 +212,18 @@ void clean_token(std::string& token)
 //enter word in lexicon
 int enter_in_lexicon(std::string& word, std::ofstream& lexfile)
 {
+    //if lexicon does not have the word
     if (lexicon.search(word) == 0)
     {
+        //update id and add it
         current_wordID++;
         lexicon.insert(word, current_wordID);
+
+        //write the information into a file
         if (lexfile.is_open()) lexfile << current_wordID << " " << word << '\n';
-        else std::cout << "Warning: lexicon output stream not open. Word not written: " << word << "\n";
+        else std::cerr << "Warning: lexicon output stream not open. Word not written: " << word << "\n";
     }
+    //return the id
     return lexicon.search(word);
 }
 
@@ -214,14 +233,17 @@ void save_to_fwd_index(int docID, std::ofstream& indexfile, std::unordered_map<i
     if (!indexfile.is_open())
     {
         std::cerr << "Error: forward_index.txt file not open\n";
-        exit(0);
+        return;
     }
+
+    //save frequency and sum of position
     for (const auto& [wordID, rank] : ranks)
     {
         indexfile << docID << " " << wordID << " " << rank.first << " " << rank.second << "\n";
     }
 }
 
+//call all the functions
 int make_things(std::string& input_dir)
 {
     int docID = 0, processed = 0;
@@ -230,10 +252,14 @@ int make_things(std::string& input_dir)
     std::ofstream parsed_files;
     std::unordered_map<int, std::pair<int, int>> ranks;
     
+    //load existing lexicon and find if there are new files
     load_lexicon();
     docID = list_files(input_dir, files);
     std::cout << "Found " << files.size() << " new files in directory: " << input_dir << "\n";
 
+    if (files.size() == 0) return 0;
+
+    //if there are new files
     std::ofstream lexfile(lexicon_file, std::ios::app);
     std::ofstream indexfile(forward_index_file, std::ios::app);
     parsed_files.open(parsedfile, std::ios::app);
@@ -253,21 +279,31 @@ int make_things(std::string& input_dir)
         return 0;
     }
 
-    //process all files
+    //process all new files
     for (auto& path : files)
     {
         ++docID;
+
+        //parse file
         if (path.substr(path.rfind('.')) == ".json") content = parse_json(path.c_str());
         else content = parse_txt(path);
         if (content == "") continue;
+
+        //save title and path
         title = content.substr(0, content.find('\n'));
         titles.push_back(title);
         paths.push_back(path);
+
+        //parse content
         parse_content(content, lexfile, ranks);
         save_to_fwd_index(docID, indexfile, ranks);
         ranks.clear();
+
+        //save path and title
         parsed_files << docID << " " << path << " " << title << "\n";
         processed++;
+
+        //display progress every 1000 files
         if (processed % 1000 == 0)
         {
             std::cout << "Processed " << processed << std::setw(7) << std::left 
